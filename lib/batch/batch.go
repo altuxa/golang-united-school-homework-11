@@ -14,48 +14,48 @@ func getOne(id int64) user {
 	return user{ID: id}
 }
 
+// SOLUTION 1
+
 func getBatch(n int64, pool int64) (res []user) {
 	res = make([]user, 0, n)
-	buf := make(chan struct{}, pool)
+	sem := make(chan struct{}, pool)
 	var wg sync.WaitGroup
 	var m sync.Mutex
 	for i := 0; i < int(n); i++ {
 		wg.Add(1)
-		buf <- struct{}{}
+		sem <- struct{}{}
 		go func(num int) {
 			user := getOne(int64(num))
 			m.Lock()
 			res = append(res, user)
 			m.Unlock()
-			<-buf
+			<-sem
 			wg.Done()
 		}(i)
 	}
 	wg.Wait()
-	close(buf)
+	close(sem)
 	return res
 }
 
+// SOLUTION 2
+
 // func getBatch(n int64, pool int64) (res []user) {
 // 	res = make([]user, 0, n)
+// 	wait := make(chan user, n)
 // 	buf := make(chan struct{}, pool)
-// 	var wg sync.WaitGroup
-// 	var ops int64
-// 	var m sync.Mutex
 // 	for i := 0; i < int(n); i++ {
-// 		wg.Add(1)
 // 		buf <- struct{}{}
-// 		go func() {
-// 			m.Lock()
-// 			user := getOne(int64(ops))
-// 			atomic.AddInt64(&ops, 1)
-// 			res = append(res, user)
-// 			m.Unlock()
+// 		go func(num int) {
+// 			user := getOne(int64(num))
 // 			<-buf
-// 			wg.Done()
-// 		}()
+// 			wait <- user
+// 		}(i)
 // 	}
-// 	wg.Wait()
 // 	close(buf)
+// 	for i := 0; i < int(n); i++ {
+// 		res = append(res, <-wait)
+// 	}
+// 	close(wait)
 // 	return res
 // }
